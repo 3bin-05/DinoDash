@@ -11,16 +11,14 @@ service cloud.firestore {
         && request.auth.uid == uid
         && isValidUserProfile(request.resource.data)
         && validateTimestamps()
-        && exists(/databases/$(database)/documents/usernames/$(request.resource.data.username))
-        && get(/databases/$(database)/documents/usernames/$(request.resource.data.username)).data.uid == uid;
+        && getAfter(/databases/$(database)/documents/usernames/$(request.resource.data.username)).data.uid == uid;
 
       // Update: user owns document, profile is valid, they own the username registry, 
       // and they are not cheating (score increases by <= 15000, games counter increments correctly)
       allow update: if request.auth != null 
         && request.auth.uid == uid
         && isValidUserProfile(request.resource.data)
-        && exists(/databases/$(database)/documents/usernames/$(request.resource.data.username))
-        && get(/databases/$(database)/documents/usernames/$(request.resource.data.username)).data.uid == uid
+        && getAfter(/databases/$(database)/documents/usernames/$(request.resource.data.username)).data.uid == uid
         && (request.resource.data.bestScore <= resource.data.bestScore || request.resource.data.bestScore - resource.data.bestScore <= 15000)
         && (request.resource.data.totalGames == resource.data.totalGames || request.resource.data.totalGames == resource.data.totalGames + 1)
         && (request.resource.data.totalDistance >= resource.data.totalDistance);

@@ -112,7 +112,7 @@ const SKINS_LIST = [
 ];
 
 export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({ onClose, initialTab }) => {
-  const { user, profile, refreshProfile } = useAuth();
+  const { user, profile, refreshProfile, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<"stats" | "edit" | "leaderboard" | "skins">(initialTab || "stats");
   const [newUsername, setNewUsername] = useState<string>(profile?.username || "");
   const [error, setError] = useState<string>("");
@@ -293,6 +293,15 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({ onCl
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await logout();
+      onClose();
+    } catch (err) {
+      console.error("Failed to log out:", err);
+    }
+  };
+
   return (
     <div className="retro-modal-overlay">
       <div className="retro-modal-box">
@@ -326,7 +335,7 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({ onCl
             className={`retro-modal-tab-btn ${activeTab === "edit" ? "active" : ""}`}
             onClick={() => setActiveTab("edit")}
           >
-            EDIT USERNAME
+            EDIT PROFILE
           </button>
         </div>
 
@@ -569,6 +578,20 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({ onCl
                   {loading ? "SAVING..." : "UPDATE SYSTEM USERNAME"}
                 </button>
               </form>
+
+              <div style={{ marginTop: "24px", paddingTop: "20px", borderTop: "2px dashed var(--border-color)", display: "flex", flexDirection: "column", gap: "10px" }}>
+                <div style={{ fontFamily: "var(--font-pixel)", fontSize: "0.55rem", color: "var(--color-secondary)", letterSpacing: "1px" }}>
+                  ACCOUNT MANAGEMENT
+                </div>
+                <button
+                  type="button"
+                  onClick={handleLogout}
+                  className="restart-btn auth-logout-btn"
+                  style={{ backgroundColor: "#ff3b30", color: "#ffffff" }}
+                >
+                  LOG OUT / SIGN OUT
+                </button>
+              </div>
             </div>
           )}
         </div>
