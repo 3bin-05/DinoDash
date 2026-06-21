@@ -2047,9 +2047,42 @@ export const DinoGame: React.FC = () => {
       <header className="top-navbar">
         <div className="top-navbar-left">
           <a href="#" className="top-navbar-logo" onClick={(e) => { e.preventDefault(); if (gameState === "START" || gameState === "GAMEOVER") startGame(); }}>
-            {/* Custom Pixel Dino Logo */}
-            <svg viewBox="0 0 24 24" width="24" height="24">
-              <path d="M18 3h-6v2h-2v2H8v2H6v2H4v8h2v2h2v-2h2v2h2v-2h2v-2h2V9h2V7h2V3h-2z" />
+            {/* Pixel-art T-Rex dino logo */}
+            <svg viewBox="0 0 16 16" width="28" height="28" shapeRendering="crispEdges" xmlns="http://www.w3.org/2000/svg">
+              {/* Head */}
+              <rect x="6" y="0" width="4" height="1" fill="currentColor"/>
+              <rect x="5" y="1" width="5" height="1" fill="currentColor"/>
+              <rect x="5" y="2" width="4" height="1" fill="currentColor"/>
+              <rect x="9" y="2" width="1" height="1" fill="#f0fdf4"/>
+              <rect x="5" y="3" width="4" height="1" fill="currentColor"/>
+              <rect x="9" y="3" width="1" height="1" fill="#052e16"/>
+              {/* Snout */}
+              <rect x="8" y="4" width="2" height="1" fill="currentColor"/>
+              <rect x="8" y="5" width="3" height="1" fill="currentColor"/>
+              {/* Neck / upper body */}
+              <rect x="5" y="4" width="3" height="1" fill="currentColor"/>
+              <rect x="4" y="5" width="4" height="1" fill="currentColor"/>
+              {/* Body */}
+              <rect x="3" y="6" width="6" height="1" fill="currentColor"/>
+              <rect x="2" y="7" width="7" height="1" fill="currentColor"/>
+              <rect x="2" y="8" width="7" height="1" fill="currentColor"/>
+              <rect x="3" y="9" width="5" height="1" fill="currentColor"/>
+              {/* Arm */}
+              <rect x="7" y="7" width="2" height="1" fill="#166534"/>
+              {/* Tail */}
+              <rect x="1" y="8" width="2" height="1" fill="currentColor"/>
+              <rect x="0" y="9" width="2" height="1" fill="currentColor"/>
+              {/* Hip */}
+              <rect x="3" y="10" width="5" height="1" fill="currentColor"/>
+              <rect x="3" y="11" width="4" height="1" fill="currentColor"/>
+              {/* Left leg */}
+              <rect x="3" y="12" width="2" height="2" fill="currentColor"/>
+              <rect x="2" y="14" width="3" height="1" fill="currentColor"/>
+              <rect x="2" y="15" width="2" height="1" fill="#166534"/>
+              {/* Right leg */}
+              <rect x="5" y="12" width="2" height="2" fill="currentColor"/>
+              <rect x="5" y="14" width="3" height="1" fill="currentColor"/>
+              <rect x="6" y="15" width="2" height="1" fill="#166534"/>
             </svg>
             DINODASH
           </a>
