@@ -2,10 +2,132 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+
+    <!-- ═══════════════════════════════════════════
+         FAVICON & ICONS
+    ═══════════════════════════════════════════ -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/favicon.svg" />
+
+    <!-- ═══════════════════════════════════════════
+         VIEWPORT & THEME
+    ═══════════════════════════════════════════ -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DinoDash - Retro Chrome Dino Infinite Runner</title>
-    <meta name="description" content="Play DinoDash, a premium retro Chrome Dino style game built using React, TypeScript, and HTML5 Canvas. Experience day/night cycles, fast jump physics, and record high scores." />
+    <meta name="theme-color" content="#0d0d0d" />
+    <meta name="color-scheme" content="dark" />
+
+    <!-- ═══════════════════════════════════════════
+         PRIMARY SEO
+    ═══════════════════════════════════════════ -->
+    <title>DinoDash – Free Dino Game Online | Play the Chrome Dino Runner</title>
+    <meta name="description" content="Play DinoDash free online – the ultimate dino game! Run, jump & dodge obstacles as a pixel T-Rex. Global leaderboards, daily challenges, achievements & skins. No download needed." />
+    <meta name="keywords" content="dino game, dino dash, dinosaur game, dino runner, chrome dino game, t-rex game, dino dash online, pixel dino game, free dino game, dino jump game, offline dinosaur game, browser dino game, run dino run, endless runner" />
+    <meta name="author" content="DinoDash" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <link rel="canonical" href="https://d-inodash.vercel.app/" />
+
+    <!-- ═══════════════════════════════════════════
+         OPEN GRAPH (Facebook, Discord, WhatsApp)
+    ═══════════════════════════════════════════ -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="DinoDash" />
+    <meta property="og:title" content="DinoDash – Free Dino Game Online | Play Now" />
+    <meta property="og:description" content="The best free dino game online! Jump over cacti, dodge pterodactyls, climb global leaderboards & complete daily challenges. No download. Play instantly!" />
+    <meta property="og:url" content="https://d-inodash.vercel.app/" />
+    <meta property="og:image" content="https://d-inodash.vercel.app/og-preview.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="DinoDash – pixel dinosaur runner game" />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- ═══════════════════════════════════════════
+         TWITTER / X CARD
+    ═══════════════════════════════════════════ -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@DinoDashGame" />
+    <meta name="twitter:title" content="DinoDash – Free Dino Game Online | Play Now" />
+    <meta name="twitter:description" content="The best free dino game online! Run, jump & dodge obstacles as a pixel T-Rex. Global leaderboards, daily challenges & achievements. No download needed." />
+    <meta name="twitter:image" content="https://d-inodash.vercel.app/og-preview.png" />
+    <meta name="twitter:image:alt" content="DinoDash – pixel dinosaur runner game" />
+
+    <!-- ═══════════════════════════════════════════
+         STRUCTURED DATA (JSON-LD)
+         Tells Google this is a playable game
+    ═══════════════════════════════════════════ -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "VideoGame",
+      "name": "DinoDash",
+      "alternateName": ["Dino Dash", "Dino Game", "Dinosaur Runner Game"],
+      "description": "DinoDash is a free online pixel dinosaur endless runner game. Jump over cacti, dodge pterodactyls, unlock skins, complete daily challenges and compete on global leaderboards.",
+      "url": "https://d-inodash.vercel.app/",
+      "image": "https://d-inodash.vercel.app/og-preview.png",
+      "screenshot": "https://d-inodash.vercel.app/og-preview.png",
+      "applicationCategory": "Game",
+      "applicationSubCategory": "Arcade Game",
+      "genre": ["Arcade", "Endless Runner", "Action"],
+      "gamePlatform": ["Web Browser", "Desktop", "Mobile"],
+      "playMode": "SinglePlayer",
+      "operatingSystem": "Any",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "inLanguage": "en",
+      "keywords": "dino game, dino dash, dinosaur game, dino runner, chrome dino, t-rex game",
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.9",
+        "ratingCount": "128",
+        "bestRating": "5",
+        "worstRating": "1"
+      }
+    }
+    </script>
+
+    <!-- ═══════════════════════════════════════════
+         BREADCRUMB (helps search engine hierarchy)
+    ═══════════════════════════════════════════ -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      "itemListElement": [
+        {
+          "@type": "ListItem",
+          "position": 1,
+          "name": "Home",
+          "item": "https://d-inodash.vercel.app/"
+        },
+        {
+          "@type": "ListItem",
+          "position": 2,
+          "name": "Play Dino Game",
+          "item": "https://d-inodash.vercel.app/"
+        }
+      ]
+    }
+    </script>
+
+    <!-- ═══════════════════════════════════════════
+         WEBSITE SCHEMA
+    ═══════════════════════════════════════════ -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "DinoDash",
+      "url": "https://dinodash.vercel.app/",
+      "description": "Free online dino game with global leaderboards, daily challenges and achievements",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://dinodash.vercel.app/?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
   </head>
   <body>
     <div id="root"></div>

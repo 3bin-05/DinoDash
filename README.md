@@ -1,95 +1,138 @@
-# DinoDash - Retro Infinite Runner (Production Documentation)
+# 🦕 DinoDash – Free Dino Game Online
 
-DinoDash is a highly optimized, production-ready retro infinite runner game built using **React**, **TypeScript**, and **HTML5 Canvas**, backed by **Firebase Auth, Firestore, and Hosting**.
+> **Play the best free dino game online – no download needed!**
+> Jump, dodge, and dash as a pixel T-Rex in this endless runner game with global leaderboards, daily challenges, and unlockable skins.
 
----
-
-## 🎮 Features
-- **Deterministic 60Hz Physics Loop**: Semi-fixed timestep loop ensures the dinosaur jumps and runs at uniform speeds across all monitors, whether they run at 60Hz, 144Hz, or 360Hz.
-- **Hardware-Accelerated Sprite Caching**: Offscreen canvases pre-render all pixel-art sprite combinations (dino states, skins, obstacles, and theme transitions), reducing rendering overhead and battery usage to near zero.
-- **Mobile Touch Controls**: Dual on-screen arcade style virtual buttons (JUMP and DUCK) enable full gameplay functionality on smartphones.
-- **Comprehensive Anti-Cheat Protection**: Dual-ended client and database-level security checks prevent leaderboard hacking and score falsification.
-- **Dynamic Leaderboard**: Real-time Firestore-synced daily, weekly, and all-time leaderboards.
-- **Progression & Skins**: Unlockable cosmetics (Golden, Cyber, Galaxy, Pixel King) tied to achievement milestones and daily runs.
+🎮 **[Play DinoDash Now →](https://d-inodash.vercel.app/)**
 
 ---
 
-## 🛠️ Technology Stack
-1. **Frontend**: React 19, TypeScript 6, Vite 8, HTML5 Canvas.
-2. **Backend**: Firebase Auth (Email/Google), Firestore (Database), Hosting (Production build).
-3. **Styling**: Vanilla CSS with modern HSL variables for real-time Day/Night theme transitions.
+## What is DinoDash?
+
+**DinoDash** is a free browser-based dinosaur endless runner game inspired by the classic Chrome dino game. Control a pixel T-Rex, leap over cacti, dodge flying pterodactyls, and see how far you can run. The further you go, the faster it gets!
+
+Whether you're searching for a **dino game**, **dino dash**, **dinosaur game online**, or the classic **Chrome offline dino game** – DinoDash is the premium version you've been looking for.
 
 ---
 
-## 🏗️ Architecture & Optimizations
+## ✨ Features
 
-### 1. Performance (Sprite Canvas Cache)
-Drawing custom skins, complex outlines, and neon shadow blurs at 60fps can cause garbage collection stutters and CPU spikes when iterating through character-pixel strings.
-- **Offscreen Canvas Rendering**: When a sprite is drawn, `drawSpriteCached` checks the global `spriteCanvasCache` for a combination key.
-- **Key Schema**: `${spriteName}_${skinId}_${fillColor}_${outlineColor}_${theme}`.
-- **Dynamic Render**: If not cached, the sprite is drawn pixel-by-pixel once on a hidden `<canvas>`, then transferred to the visible canvas using `ctx.drawImage()`, which is hardware-accelerated.
-- **Cache Eviction**: The cache is cleared automatically on game restart (`startGame`) and when Day/Night theme transitions finish, preventing memory leaks.
-
-### 2. Fair Spawning (Dynamic Landing Gaps)
-Classic runners often suffer from impossible randomly generated combinations. The spawning engine calculates player jump physics in real time:
-- **Jump Frame Count**: $T_{\text{jump}} = 2 \times \frac{|V_{\text{jump}}|}{g} \approx 35 \text{ frames}$.
-- **Safe Trajectory**: The distance required to complete a jump is speed-dependent ($D = \text{speed} \times T_{\text{jump}}$).
-- **Enforced Safety Margins**: The system guarantees a minimum landing reaction window ($T_{\text{recovery}} \ge 18 \text{ frames}$) between consecutive jumping obstacles (large cacti, low birds), scaling spacing dynamically with speed:
-  $$\text{Gap}_{\text{min}} = \text{speed} \times 53$$
-
-### 3. Anti-Cheat & Security
-
-#### Client-Side Memory Protection
-Memory scanners (like Cheat Engine) search for the exact score value in RAM and modify it. 
-- **Obfuscated Score Manager**: The score is stored in memory as an XOR-masked variable pair:
-  $$\text{Score} = \text{scoreObsVal} \oplus \text{scoreMask}$$
-- **Re-Masking Ticks**: On every score increment, a new random mask is generated, and the variables are updated.
-- **Focus Time-to-Score Check**: Evaluates if score increments exceed the maximum physical tick rate:
-  $$\text{Score} \le (80 \times \text{elapsedSeconds}) + 20$$
-- If focus is lost (`window.onblur`), the physics ticks freeze and time scales are halted, preventing speedhack injections.
-
-#### Firestore Database Rules (`firestore.rules`)
-Firestore enforces hard validations at the API database layer to prevent direct console injection:
-- **Username Uniqueness**: Enforced by transaction checks on the `/usernames/{username}` lookup table.
-- **Score Velocity Limit**: Prevents high-score injection. A user's profile `bestScore` can only increase by at most `15,000` points per database write.
-- **Leaderboard Validity**: Ensures a user cannot submit a score to `leaderboard_today_` or `leaderboard_weekly_` collections unless it is less than or equal to their verified profile `bestScore`.
+| Feature | Details |
+|---|---|
+| 🏃 **Endless Runner** | Classic dino runner gameplay with increasing speed |
+| 🌙 **Day / Night Cycle** | Atmosphere switches as your score climbs |
+| 🏆 **Global Leaderboards** | All-time, weekly, and daily rankings |
+| 📅 **Daily Challenges** | New challenge every 24 hours |
+| 🎖️ **Achievements** | 10+ unlockable achievement badges |
+| 🎨 **Dino Skins** | Unlock and equip different dino looks |
+| 👤 **User Profiles** | Sign in with Google to save progress |
+| 📊 **Stats Tracking** | Best score, games played, total distance |
+| 👻 **Ghost Run** | Practice mode without affecting your stats |
 
 ---
 
-## 🚀 Local Development
+## 🕹️ How to Play
 
-1. **Install Dependencies**:
-   ```bash
-   npm install
-   ```
-2. **Start Dev Server**:
-   ```bash
-   npm run dev
-   ```
-3. **Build Production Assets**:
-   ```bash
-   npm run build
-   ```
+| Key | Action |
+|---|---|
+| `Space` / `↑` | Jump |
+| `↓` | Duck |
+| `Double Space` | Double jump |
 
 ---
 
-## 🌐 Deploy to Firebase
+## 🛠️ Tech Stack
 
-To deploy the production-ready code to Hosting and Firestore:
+- **Frontend:** React 19 + TypeScript + Vite
+- **Game Engine:** HTML5 Canvas (custom, no game library)
+- **Backend / Auth:** Firebase (Firestore, Authentication)
+- **Deployment:** Vercel
+- **Styling:** Vanilla CSS with CSS custom properties
 
-1. **Install Firebase CLI** (if not installed):
-   ```bash
-   npm install -g firebase-tools
-   ```
-2. **Login to Firebase**:
-   ```bash
-   firebase login
-   ```
-3. **Select Firebase Project**:
-   ```bash
-   firebase use --add
-   ```
-4. **Deploy Rules and Hosting**:
-   ```bash
-   firebase deploy
-   ```
+---
+
+## 🚀 Getting Started (Local Development)
+
+### Prerequisites
+- Node.js 18+
+- A Firebase project
+
+### Setup
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/your-username/dinodash.git
+cd dinodash
+
+# 2. Install dependencies
+npm install
+
+# 3. Configure environment variables
+cp .env.example .env
+# Fill in your Firebase credentials in .env
+
+# 4. Start the development server
+npm run dev
+```
+
+### Environment Variables
+
+Copy `.env.example` to `.env` and fill in your Firebase project values:
+
+```env
+VITE_FIREBASE_API_KEY=your_api_key_here
+VITE_FIREBASE_AUTH_DOMAIN=your_project_id.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_project_id.firebasestorage.app
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
+VITE_FIREBASE_MEASUREMENT_ID=your_measurement_id
+```
+
+---
+
+## 📦 Deployment (Vercel)
+
+1. Push your code to GitHub
+2. Import the repo on [vercel.com](https://vercel.com)
+3. Add all `VITE_FIREBASE_*` env vars in Vercel → Settings → Environment Variables
+4. Deploy!
+
+---
+
+## 📁 Project Structure
+
+```
+dinodash/
+├── public/
+│   ├── favicon.svg        # Pixel dino favicon
+│   ├── og-preview.png     # Social media preview image
+│   ├── robots.txt         # SEO crawler instructions
+│   └── sitemap.xml        # SEO sitemap
+├── src/
+│   ├── components/
+│   │   ├── DinoGame.tsx           # Main game component (~2500 lines)
+│   │   ├── AuthScreen.tsx         # Login / sign-up screen
+│   │   ├── UsernameSetupScreen.tsx
+│   │   └── ProfileSettingsModal.tsx
+│   ├── context/
+│   │   └── AuthContext.tsx        # Firebase auth context
+│   └── utils/
+│       ├── firebase.ts            # Firebase config & helpers
+│       └── dailyChallenges.ts     # Daily challenge definitions
+├── .env.example           # Template for environment variables
+├── .gitignore
+├── index.html             # SEO-optimized entry point
+├── vercel.json            # Vercel SPA routing config
+└── vite.config.ts
+```
+
+---
+
+## 📄 License
+
+MIT License — free to use, modify, and distribute.
+
+---
+
+*Keywords: dino game, dino dash, dinosaur game online, chrome dino game, dino runner, t-rex game, pixel dino, free dino game browser, endless runner game*

@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# Block irrelevant paths
+Disallow: /src/
+Disallow: /node_modules/
+
+# Sitemap location
+Sitemap: https://d-inodash.vercel.app/sitemap.xml
