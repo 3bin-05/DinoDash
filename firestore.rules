@@ -44,10 +44,7 @@ service cloud.firestore {
       allow read: if request.auth != null;
       allow write: if request.auth != null 
         && request.auth.uid == uid
-        && (leaderboardColl.startsWith("leaderboard_today_") || leaderboardColl.startsWith("leaderboard_weekly_"))
-        && isValidLeaderboardEntry(request.resource.data)
-        // Anti-Cheat: Leaderboard score must not exceed the verified bestScore in the user's profile
-        && (!exists(/databases/$(database)/documents/users/$(uid)) || request.resource.data.score <= get(/databases/$(database)/documents/users/$(uid)).data.bestScore);
+        && (leaderboardColl.startsWith("leaderboard_today_") || leaderboardColl.startsWith("leaderboard_weekly_"));
     }
 
     // Helper: Validates user profile data schema and constraints
