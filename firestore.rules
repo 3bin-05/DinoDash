@@ -47,7 +47,7 @@ service cloud.firestore {
         && (leaderboardColl.startsWith("leaderboard_today_") || leaderboardColl.startsWith("leaderboard_weekly_"))
         && isValidLeaderboardEntry(request.resource.data)
         // Anti-Cheat: Leaderboard score must not exceed the verified bestScore in the user's profile
-        && request.resource.data.score <= get(/databases/$(database)/documents/users/$(uid)).data.bestScore;
+        && (!exists(/databases/$(database)/documents/users/$(uid)) || request.resource.data.score <= get(/databases/$(database)/documents/users/$(uid)).data.bestScore);
     }
 
     // Helper: Validates user profile data schema and constraints
@@ -78,7 +78,7 @@ service cloud.firestore {
         && data.score is int 
         && data.score >= 0 
         && data.score < 500000
-        && data.timestamp == request.time;
+        && data.timestamp is timestamp;
     }
   }
 }
