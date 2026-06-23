@@ -25,11 +25,17 @@ export function getDateKey(): string {
   return `${d.getUTCFullYear()}-${(d.getUTCMonth() + 1).toString().padStart(2, "0")}-${d.getUTCDate().toString().padStart(2, "0")}`;
 }
 
-// Helper: returns the current UTC week key format (YYYY-W[weekNumber])
+// Helper: returns a stable UTC week key (YYYY-W[isoWeekNumber]) based on ISO 8601
+// ISO weeks start on Monday; Week 1 is the week containing the first Thursday of the year.
 export function getWeekKey(): string {
   const d = new Date();
-  const oneJan = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  const numberOfDays = Math.floor((d.getTime() - oneJan.getTime()) / (24 * 60 * 60 * 1000));
-  const result = Math.ceil((d.getUTCDay() + 1 + numberOfDays) / 7);
-  return `${d.getUTCFullYear()}-W${result}`;
+  // Copy date so we don't mutate the original
+  const date = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  // ISO week: shift so Monday=0 ... Sunday=6
+  const dayOfWeek = (date.getUTCDay() + 6) % 7;
+  // Set to nearest Thursday (ensures we are in the correct ISO year)
+  date.setUTCDate(date.getUTCDate() - dayOfWeek + 3);
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil(((date.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+  return `${date.getUTCFullYear()}-W${weekNo.toString().padStart(2, "0")}`;
 }

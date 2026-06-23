@@ -241,6 +241,8 @@ export const DinoGame: React.FC = () => {
   const gameStartTimeRef = useRef<number>(0);
   const dailyChallengeProgressRef = useRef<number>(0);
   const dailyChallengeCompletedRef = useRef<boolean>(false);
+  // Bug 3 fix: tracks if the in-run completion toast already fired to prevent duplicate on game over
+  const dailyChallengeToastedRef = useRef<boolean>(false);
 
   // Sync highScore state and ref with cloud profile bestScore
   useEffect(() => {
@@ -633,6 +635,9 @@ export const DinoGame: React.FC = () => {
     if (!profile) return;
     const newCompletedCount = (profile.dailyChallengesCompletedCount || 0) + 1;
 
+    // Mark toast as already shown so game over doesn't show a second one (Bug 3 fix)
+    dailyChallengeToastedRef.current = true;
+
     // Play milestone sound
     playMilestoneSound();
 
@@ -704,6 +709,7 @@ export const DinoGame: React.FC = () => {
       dailyChallengeProgressRef.current = 0;
       dailyChallengeCompletedRef.current = false;
     }
+    dailyChallengeToastedRef.current = false; // Reset toast flag each new run
 
     // Detect system theme on restart
     const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -810,31 +816,49 @@ export const DinoGame: React.FC = () => {
         localStorage.setItem(`dinodash_high_score_${userId}`, currentScore.toString());
       }
 
-      // Save to score history
+      // Save to score history (Bug 5 fix: wrapped in try/catch so any localStorage error doesn't block cloud save)
       const userId = user?.uid || "guest";
       const historyKey = `dinodash_score_history_${userId}`;
-      const currentHistoryJson = localStorage.getItem(historyKey);
-      let currentHistory: number[] = [];
       try {
-        currentHistory = currentHistoryJson ? JSON.parse(currentHistoryJson) : [10, 30, 20, 50, 45, 80, 70, 110];
-      } catch (e) {
-        currentHistory = [10, 30, 20, 50, 45, 80, 70, 110];
+        const currentHistoryJson = localStorage.getItem(historyKey);
+        let currentHistory: number[] = [];
+        try {
+          currentHistory = currentHistoryJson ? JSON.parse(currentHistoryJson) : [10, 30, 20, 50, 45, 80, 70, 110];
+        } catch (e) {
+          currentHistory = [10, 30, 20, 50, 45, 80, 70, 110];
+        }
+        currentHistory.push(currentScore);
+        if (currentHistory.length > 8) {
+          currentHistory.shift();
+        }
+        localStorage.setItem(historyKey, JSON.stringify(currentHistory));
+        setScoreHistory(currentHistory);
+      } catch (storageErr) {
+        console.warn("Score history localStorage save failed (quota?):", storageErr);
+        // Still update UI state even if localStorage fails
+        setScoreHistory(prev => {
+          const next = [...prev, currentScore];
+          if (next.length > 8) next.shift();
+          return next;
+        });
       }
-      currentHistory.push(currentScore);
-      if (currentHistory.length > 8) {
-        currentHistory.shift();
-      }
-      localStorage.setItem(historyKey, JSON.stringify(currentHistory));
-      setScoreHistory(currentHistory);
 
       // Save best run history as ghost run if it's the new record
+      // Bug 1 fix: downsampled to every 3rd frame (~20fps) and wrapped in try/catch to prevent
+      // QuotaExceededError from crashing gameOver and blocking cloud stats save.
       if (user) {
-        const savedGhostScore = localStorage.getItem(`dinodash_ghost_score_${user.uid}`);
-        const ghostScore = savedGhostScore ? parseInt(savedGhostScore, 10) : 0;
-        const savedGhostRun = localStorage.getItem(`dinodash_ghost_run_${user.uid}`);
-        if (currentScore > ghostScore || !savedGhostRun) {
-          localStorage.setItem(`dinodash_ghost_run_${user.uid}`, JSON.stringify(currentRunHistoryRef.current));
-          localStorage.setItem(`dinodash_ghost_score_${user.uid}`, currentScore.toString());
+        try {
+          const savedGhostScore = localStorage.getItem(`dinodash_ghost_score_${user.uid}`);
+          const ghostScore = savedGhostScore ? parseInt(savedGhostScore, 10) : 0;
+          const savedGhostRun = localStorage.getItem(`dinodash_ghost_run_${user.uid}`);
+          if (currentScore > ghostScore || !savedGhostRun) {
+            // Downsample: keep every 3rd frame to reduce storage size (~20fps from 60fps)
+            const downsampledRun = currentRunHistoryRef.current.filter((_, i) => i % 3 === 0);
+            localStorage.setItem(`dinodash_ghost_run_${user.uid}`, JSON.stringify(downsampledRun));
+            localStorage.setItem(`dinodash_ghost_score_${user.uid}`, currentScore.toString());
+          }
+        } catch (ghostErr) {
+          console.warn("Ghost run localStorage save failed (quota?), skipping:", ghostErr);
         }
       }
 
@@ -867,8 +891,11 @@ export const DinoGame: React.FC = () => {
               // If it became completed during this run:
               if (finalCompleted) {
                 completedCount += 1;
-                showAchievementToast("daily_challenge", "DAILY RUN SUCCESS", `Daily run complete! Total: ${completedCount}`);
-                playMilestoneSound();
+                // Bug 3 fix: only fire toast here if the in-run completeDailyChallenge() didn't already show it
+                if (!dailyChallengeToastedRef.current) {
+                  showAchievementToast("daily_challenge", "DAILY RUN SUCCESS", `Daily run complete! Total: ${completedCount}`);
+                  playMilestoneSound();
+                }
               }
             }
 
