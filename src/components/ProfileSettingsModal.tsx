@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
-import { doc, updateDoc, collection, query, orderBy, getDoc, where, limit, onSnapshot, getCountFromServer, runTransaction } from "firebase/firestore";
+import { doc, updateDoc, collection, query, orderBy, limit, onSnapshot, runTransaction } from "firebase/firestore";
 import { db } from "../utils/firebase";
 import {
   getDailyScoresQuery,
   getWeeklyScoresQuery,
-  deduplicateScores,
 } from "../utils/leaderboardQueries";
 import { useAuth } from "../context/AuthContext";
 import {
