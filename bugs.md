@@ -32,3 +32,11 @@ Here is a list of identified bugs, security concerns, and design irregularities 
 * **File**: [DinoGame.tsx](file:///d:/DinoGame/src/components/DinoGame.tsx#L186-L189)
 * **Symptom**: When a user logs in, their locally stored `highScore` state is loaded from `localStorage` before the user profile is fetched. If a user logs in on a new device, their local `highScore` defaults to 0 instead of their cloud profile's high score.
 * **Impact**: The UI displays 0 for "Best Run" on the Game Over screen until a new game finishes and syncs the score. (Fixed in the recent patch by adding the real-time syncing effect, but documented here as an irregularity in the initial architecture).
+
+---
+
+## 5. Recent Runs Graph and Games Played Counter Not Updating (Medium)
+* **File**: [DinoGame.tsx](file:///d:/DinoGame/src/components/DinoGame.tsx)
+* **Symptom**: The "GAMES PLAYED" counter (displaying `profile?.totalGames`) and the "RECENT RUNS" graph (displaying `scoreHistory`) do not increment or update when completing runs.
+* **Impact**: The dashboard stats and the recent runs trend remain frozen at their old values. This was caused by the same root Firestore update permission rule failure that blocked updates to user profile metrics. Since the database write failed, the games played counter remained stale, and any JavaScript errors thrown during the game-over sync loop prevented `scoreHistory` from updating in local storage.
+* **Recommendation**: Ensure database writes succeed (addressed in the recent rules update) and wrap state updates in local storage safely so that failures in one storage location do not prevent other UI stats from updating.
