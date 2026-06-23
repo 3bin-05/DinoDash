@@ -47,6 +47,16 @@ service cloud.firestore {
         && (leaderboardColl.startsWith("leaderboard_today_") || leaderboardColl.startsWith("leaderboard_weekly_"));
     }
 
+    // 4. Global Scores Collection (New Unified Leaderboard Source)
+    match /scores/{scoreId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.username is string
+        && request.resource.data.score is int
+        && request.resource.data.timestamp is timestamp;
+    }
+
     // Helper: Validates user profile data schema and constraints
     function isValidUserProfile(data) {
       return data.username is string

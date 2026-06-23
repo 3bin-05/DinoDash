@@ -22,8 +22,9 @@ import {
 } from "../utils/sprites";
 import { useAuth } from "../context/AuthContext";
 import { db, getDateKey, getWeekKey } from "../utils/firebase";
-import { doc, updateDoc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
+import { doc, updateDoc, setDoc, getDoc, serverTimestamp, collection, addDoc } from "firebase/firestore";
 import { ProfileSettingsModal } from "./ProfileSettingsModal";
+import { LeaderboardPanel } from "./LeaderboardPanel";
 import { getDailyChallengeForDate } from "../utils/dailyChallenges";
 import type { DailyChallengeDef } from "../utils/dailyChallenges";
 // Game Constants
@@ -970,6 +971,20 @@ export const DinoGame: React.FC = () => {
                 dailyChallengesCompletedCount: completedCount
               });
               console.log("User profile update successful!");
+
+              // Log score to scores collection
+              try {
+                const scoresColl = collection(db, "scores");
+                await addDoc(scoresColl, {
+                  userId: user.uid,
+                  username: currentProfile.username,
+                  score: currentScore,
+                  timestamp: serverTimestamp()
+                });
+                console.log("Global score logged successfully!");
+              } catch (scoreErr) {
+                console.warn("Failed to log global score:", scoreErr);
+              }
             } catch (profileErr) {
               console.error("User profile update failed:", profileErr);
               throw profileErr; // Profile update is critical, so we rethrow to catch block
@@ -2354,32 +2369,48 @@ export const DinoGame: React.FC = () => {
 
           {/* Pause State overlay */}
           {isPaused && (
-            <div className="overlay-screen gameover-screen" onClick={resumeGame} style={{ cursor: "pointer", pointerEvents: "auto" }}>
-              <div className="game-over-title" style={{ color: "#ff9500" }}>PAUSED</div>
-              <div className="primary-text animate-pulse">PRESS ESC OR CLICK TO RESUME</div>
+            <div className="overlay-screen gameover-screen" style={{ pointerEvents: "auto" }}>
+              <div className="game-over-container" onClick={(e) => e.stopPropagation()}>
+                <div className="game-over-left">
+                  <div className="game-over-title" style={{ color: "#ff9500" }}>PAUSED</div>
+                  <div className="primary-text animate-pulse" onClick={resumeGame} style={{ cursor: "pointer" }}>
+                    PRESS ESC OR CLICK HERE TO RESUME
+                  </div>
+                </div>
+                <div className="game-over-right">
+                  <LeaderboardPanel />
+                </div>
+              </div>
             </div>
           )}
 
           {/* GameOver state overlay */}
           {gameState === "GAMEOVER" && (
             <div className="overlay-screen gameover-screen">
-              <div className="game-over-title">GAME OVER</div>
-              <div className="game-over-stats">
-                <div className="stat-row">
-                  <span>Score:</span>
-                  <span className="stat-val">{score}</span>
+              <div className="game-over-container">
+                <div className="game-over-left">
+                  <div className="game-over-title">GAME OVER</div>
+                  <div className="game-over-stats">
+                    <div className="stat-row">
+                      <span>Score:</span>
+                      <span className="stat-val">{score}</span>
+                    </div>
+                    <div className="stat-row">
+                      <span>Best Run:</span>
+                      <span className="stat-val" style={{ color: "#ffd700" }}>{highScore}</span>
+                    </div>
+                  </div>
+                  <button className="restart-btn" onClick={startGame}>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="restart-icon">
+                      <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l.73-2.73" />
+                    </svg>
+                    PLAY AGAIN
+                  </button>
                 </div>
-                <div className="stat-row">
-                  <span>Best Run:</span>
-                  <span className="stat-val" style={{ color: "#ffd700" }}>{highScore}</span>
+                <div className="game-over-right">
+                  <LeaderboardPanel />
                 </div>
               </div>
-              <button className="restart-btn" onClick={startGame}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="restart-icon">
-                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l.73-2.73" />
-                </svg>
-                PLAY AGAIN
-              </button>
             </div>
           )}
         </div>
