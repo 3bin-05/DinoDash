@@ -6,7 +6,7 @@ import {
   signOut,
 } from "firebase/auth";
 import type { User } from "firebase/auth";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, onSnapshot } from "firebase/firestore";
 import { auth, googleProvider, db } from "../utils/firebase";
 
 export interface DailyChallengeStatus {
@@ -67,17 +67,48 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+    let unsubscribeProfile: (() => void) | null = null;
+
+    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
+
+      if (unsubscribeProfile) {
+        unsubscribeProfile();
+        unsubscribeProfile = null;
+      }
+
       if (currentUser) {
-        await fetchProfile(currentUser.uid);
+        setLoadingProfile(true);
+        const docRef = doc(db, "users", currentUser.uid);
+        unsubscribeProfile = onSnapshot(
+          docRef,
+          (docSnap) => {
+            if (docSnap.exists()) {
+              setProfile(docSnap.data() as UserProfile);
+            } else {
+              setProfile(null);
+            }
+            setLoadingProfile(false);
+          },
+          (err) => {
+            console.error("Error listening to user profile:", err);
+            setProfile(null);
+            setLoadingProfile(false);
+          }
+        );
       } else {
         setProfile(null);
+        setLoadingProfile(false);
       }
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeProfile) {
+        unsubscribeProfile();
+      }
+    };
   }, []);
 
   const logout = async () => {

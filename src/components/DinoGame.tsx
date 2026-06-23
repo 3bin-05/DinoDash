@@ -184,7 +184,8 @@ export const DinoGame: React.FC = () => {
   const [gameState, setGameState] = useState<GameState>("START");
   const [score, setScore] = useState<number>(0);
   const [highScore, setHighScore] = useState<number>(() => {
-    const saved = localStorage.getItem("dinodash_high_score");
+    const userId = user?.uid || "guest";
+    const saved = localStorage.getItem(`dinodash_high_score_${userId}`);
     return saved ? parseInt(saved, 10) : 0;
   });
   const [isNightMode, setIsNightMode] = useState<boolean>(false);
@@ -240,6 +241,15 @@ export const DinoGame: React.FC = () => {
   const gameStartTimeRef = useRef<number>(0);
   const dailyChallengeProgressRef = useRef<number>(0);
   const dailyChallengeCompletedRef = useRef<boolean>(false);
+
+  // Sync highScore state and ref with cloud profile bestScore
+  useEffect(() => {
+    if (profile) {
+      const dbBestScore = profile.bestScore || 0;
+      setHighScore(dbBestScore);
+      highScoreRef.current = dbBestScore;
+    }
+  }, [profile?.bestScore]);
 
   // Entity States
   const dinoRef = useRef<DinoState>({
@@ -796,7 +806,8 @@ export const DinoGame: React.FC = () => {
       if (currentScore > highScoreRef.current) {
         highScoreRef.current = currentScore;
         setHighScore(currentScore);
-        localStorage.setItem("dinodash_high_score", currentScore.toString());
+        const userId = user?.uid || "guest";
+        localStorage.setItem(`dinodash_high_score_${userId}`, currentScore.toString());
       }
 
       // Save to score history

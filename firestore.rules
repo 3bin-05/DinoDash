@@ -13,12 +13,13 @@ service cloud.firestore {
         && validateTimestamps()
         && getAfter(/databases/$(database)/documents/usernames/$(request.resource.data.username)).data.uid == uid;
 
-      // Update: user owns document, profile is valid, they own the username registry, 
+      // Update: user owns document, profile is valid, they own the username registry (if changed), 
       // and they are not cheating (score increases by <= 15000, games counter increments correctly)
       allow update: if request.auth != null 
         && request.auth.uid == uid
         && isValidUserProfile(request.resource.data)
-        && getAfter(/databases/$(database)/documents/usernames/$(request.resource.data.username)).data.uid == uid
+        && (request.resource.data.username == resource.data.username 
+            || getAfter(/databases/$(database)/documents/usernames/$(request.resource.data.username)).data.uid == uid)
         && (request.resource.data.bestScore <= resource.data.bestScore || request.resource.data.bestScore - resource.data.bestScore <= 15000)
         && (request.resource.data.totalGames == resource.data.totalGames || request.resource.data.totalGames == resource.data.totalGames + 1)
         && (request.resource.data.totalDistance >= resource.data.totalDistance);
