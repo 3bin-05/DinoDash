@@ -155,6 +155,12 @@ const ALL_ACHIEVEMENTS = [
 
 export const DinoGame: React.FC = () => {
   const { user, profile, refreshProfile } = useAuth();
+  const profileRef = useRef(profile);
+
+  useEffect(() => {
+    profileRef.current = profile;
+  }, [profile]);
+
   const [showProfileModal, setShowProfileModal] = useState<boolean>(false);
   const [modalTab, setModalTab] = useState<"stats" | "edit" | "leaderboard" | "skins">("stats");
   const [scoreHistory, setScoreHistory] = useState<number[]>([]);
@@ -632,8 +638,9 @@ export const DinoGame: React.FC = () => {
   };
 
   const completeDailyChallenge = (challenge: DailyChallengeDef) => {
-    if (!profile) return;
-    const newCompletedCount = (profile.dailyChallengesCompletedCount || 0) + 1;
+    const currentProfile = profileRef.current;
+    if (!currentProfile) return;
+    const newCompletedCount = (currentProfile.dailyChallengesCompletedCount || 0) + 1;
 
     // Mark toast as already shown so game over doesn't show a second one (Bug 3 fix)
     dailyChallengeToastedRef.current = true;
@@ -642,7 +649,7 @@ export const DinoGame: React.FC = () => {
     playMilestoneSound();
 
     // Trigger achievement toast
-    const currentAchievements = profile.achievements || [];
+    const currentAchievements = currentProfile.achievements || [];
     if (!currentAchievements.includes("daily_challenge")) {
       showAchievementToast("daily_challenge", "DAILY RUN SUCCESS", `Daily run complete! Total: ${newCompletedCount}`);
     } else {
@@ -702,9 +709,10 @@ export const DinoGame: React.FC = () => {
     lastObstacleTypeRef.current = { type: "", variant: 0, heightIndex: 0 };
 
     const today = getDateKey();
-    if (profile?.dailyChallengeStatus?.date === today) {
-      dailyChallengeProgressRef.current = profile.dailyChallengeStatus.progress || 0;
-      dailyChallengeCompletedRef.current = profile.dailyChallengeStatus.completed || false;
+    const currentProfile = profileRef.current;
+    if (currentProfile?.dailyChallengeStatus?.date === today) {
+      dailyChallengeProgressRef.current = currentProfile.dailyChallengeStatus.progress || 0;
+      dailyChallengeCompletedRef.current = currentProfile.dailyChallengeStatus.completed || false;
     } else {
       dailyChallengeProgressRef.current = 0;
       dailyChallengeCompletedRef.current = false;
@@ -864,22 +872,23 @@ export const DinoGame: React.FC = () => {
 
       // Save High Score and Stats to Cloud Firestore
       const saveCloudStats = async () => {
-        if (user && profile) {
+        const currentProfile = profileRef.current;
+        if (user && currentProfile) {
           try {
             const userRef = doc(db, "users", user.uid);
-            const newBest = Math.max(profile.bestScore || 0, currentScore);
-            const newTotalGames = (profile.totalGames || 0) + 1;
-            const newTotalDistance = (profile.totalDistance || 0) + currentScore;
-            const newGiftsCollected = (profile.giftsCollected || 0) + sessionGiftsRef.current;
+            const newBest = Math.max(currentProfile.bestScore || 0, currentScore);
+            const newTotalGames = (currentProfile.totalGames || 0) + 1;
+            const newTotalDistance = (currentProfile.totalDistance || 0) + currentScore;
+            const newGiftsCollected = (currentProfile.giftsCollected || 0) + sessionGiftsRef.current;
 
             // Process Daily Challenge updates on game over
             const today = getDateKey();
             const currentChallenge = getDailyChallengeForDate(today);
-            const wasAlreadyCompleted = profile.dailyChallengeStatus?.date === today && profile.dailyChallengeStatus?.completed;
+            const wasAlreadyCompleted = currentProfile.dailyChallengeStatus?.date === today && currentProfile.dailyChallengeStatus?.completed;
 
             let finalCompleted = dailyChallengeCompletedRef.current;
             let finalProgress = dailyChallengeProgressRef.current;
-            let completedCount = profile.dailyChallengesCompletedCount || 0;
+            let completedCount = currentProfile.dailyChallengesCompletedCount || 0;
 
             if (!wasAlreadyCompleted) {
               if (currentChallenge.type === "games") {
@@ -900,7 +909,7 @@ export const DinoGame: React.FC = () => {
             }
 
             // Unlock achievements
-            const achievements = new Set(profile.achievements || []);
+            const achievements = new Set(currentProfile.achievements || []);
             achievements.add("first_game");
             if (newBest >= 500) achievements.add("score_500");
             if (newBest >= 5000) achievements.add("score_5000");
@@ -912,7 +921,7 @@ export const DinoGame: React.FC = () => {
             if (finalCompleted) achievements.add("daily_challenge");
 
             // Sync unlocked skins based on achievements and daily challenge completions count
-            const unlockedSkins = new Set(profile.unlockedSkins || ["default"]);
+            const unlockedSkins = new Set(currentProfile.unlockedSkins || ["default"]);
             if (achievements.has("score_500")) unlockedSkins.add("sunglasses");
             if (achievements.has("first_game")) unlockedSkins.add("scarf");
             if (achievements.has("score_5000")) unlockedSkins.add("golden");
@@ -975,7 +984,7 @@ export const DinoGame: React.FC = () => {
                   leaderboardPromises.push(
                     setDoc(todayDocRef, {
                       uid: user.uid,
-                      username: profile.username,
+                      username: currentProfile.username,
                       score: currentScore,
                       timestamp: serverTimestamp()
                     })
@@ -986,7 +995,7 @@ export const DinoGame: React.FC = () => {
                   leaderboardPromises.push(
                     setDoc(weeklyDocRef, {
                       uid: user.uid,
-                      username: profile.username,
+                      username: currentProfile.username,
                       score: currentScore,
                       timestamp: serverTimestamp()
                     })
