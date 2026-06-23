@@ -1,6 +1,11 @@
 import React, { useState, useEffect, useRef } from "react";
-import { doc, updateDoc, collection, query, where, getDoc, orderBy, limit, onSnapshot, getCountFromServer, runTransaction } from "firebase/firestore";
-import { db, getDateKey, getWeekKey } from "../utils/firebase";
+import { doc, updateDoc, collection, query, orderBy, getDoc, where, limit, onSnapshot, getCountFromServer, runTransaction } from "firebase/firestore";
+import { db } from "../utils/firebase";
+import {
+  getDailyScoresQuery,
+  getWeeklyScoresQuery,
+  deduplicateScores,
+} from "../utils/leaderboardQueries";
 import { useAuth } from "../context/AuthContext";
 import {
   DINO_STAND,
@@ -141,70 +146,96 @@ export const ProfileSettingsModal: React.FC<ProfileSettingsModalProps> = ({ onCl
     setUserRank(null);
     setUserScore(null);
 
+    // ---------------------------------------------------------------
+    // ALGORITHM SELECTION:
+    //   TODAY  → scores collection, timestamp >= today midnight
+    //   WEEKLY → scores collection, timestamp >= 7 days ago midnight
+    //   ALLTIME→ users collection, ordered by bestScore DESC (no timestamp)
+    // ---------------------------------------------------------------
     let q;
-    let collRef;
-    const dateKey = getDateKey();
-    const weekKey = getWeekKey();
+    const isTimeBased = leaderboardTab === "today" || leaderboardTab === "weekly";
 
     if (leaderboardTab === "today") {
-      collRef = collection(db, `leaderboard_today_${dateKey}`);
-      q = query(collRef, orderBy("score", "desc"), limit(100));
+      q = getDailyScoresQuery();
     } else if (leaderboardTab === "weekly") {
-      collRef = collection(db, `leaderboard_weekly_${weekKey}`);
-      q = query(collRef, orderBy("score", "desc"), limit(100));
+      q = getWeeklyScoresQuery();
     } else {
-      collRef = collection(db, "users");
-      q = query(collRef, orderBy("bestScore", "desc"), limit(100));
+      // All-Time: query users collection sorted by bestScore
+      const usersCollRef = collection(db, "users");
+      q = query(usersCollRef, orderBy("bestScore", "desc"), limit(200));
     }
 
-    const unsubscribe = onSnapshot(q, async (snapshot) => {
-      const list: LeaderboardEntry[] = [];
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const rawEntries: { uid: string; username: string; score: number }[] = [];
+
       snapshot.forEach((d) => {
         const data = d.data();
-        list.push({
-          uid: d.id,
-          username: data.username || "anonymous",
-          score: leaderboardTab === "alltime" ? (data.bestScore || 0) : (data.score || 0),
-        });
-      });
-      setLeaderboardList(list);
 
-      // Check if current user is in the top 100
-      const userIndex = list.findIndex(item => item.uid === currentUser.uid);
+        if (leaderboardTab === "alltime") {
+          // All-Time: doc.id is uid, read bestScore
+          const best = Number(data.bestScore) || 0;
+          if (best > 0) {
+            rawEntries.push({
+              uid: d.id,
+              username: data.username || "anonymous",
+              score: best,
+            });
+          }
+        } else {
+          // Daily/Weekly: doc is a run in `scores` collection
+          rawEntries.push({
+            uid: data.userId || "",
+            username: data.username || "anonymous",
+            score: Number(data.score) || 0,
+          });
+        }
+      });
+
+      // For time-based tabs: sort by score DESC then deduplicate by uid
+      let finalList: { uid: string; username: string; score: number }[];
+      if (isTimeBased) {
+        rawEntries.sort((a, b) => b.score - a.score);
+        const seen = new Set<string>();
+        finalList = rawEntries.filter((e) => {
+          if (seen.has(e.uid)) return false;
+          seen.add(e.uid);
+          return true;
+        });
+      } else {
+        // All-time is already ordered by Firestore and unique per user
+        finalList = rawEntries;
+      }
+
+      const top100 = finalList.slice(0, 100);
+      setLeaderboardList(top100);
+
+      // Find current user in the top 100
+      const userIndex = top100.findIndex((item) => item.uid === currentUser.uid);
       if (userIndex !== -1) {
         setUserRank(userIndex + 1);
-        setUserScore(list[userIndex].score);
-        setLoadingLeaderboard(false);
+        setUserScore(top100[userIndex].score);
       } else {
-        // Fetch current user's personal score and rank
-        try {
-          let scoreVal = 0;
-          const userDocRef = doc(db, collRef.path, currentUser.uid);
-          const userDocSnap = await getDoc(userDocRef);
-          if (userDocSnap.exists()) {
-            const data = userDocSnap.data();
-            scoreVal = leaderboardTab === "alltime" ? (data.bestScore || 0) : (data.score || 0);
-          }
-          setUserScore(scoreVal);
-
-          if (scoreVal > 0) {
-            const scoreField = leaderboardTab === "alltime" ? "bestScore" : "score";
-            const countQ = query(collRef, where(scoreField, ">", scoreVal));
-            const countSnap = await getCountFromServer(countQ);
-            setUserRank(countSnap.data().count + 1);
-          } else {
-            setUserRank(null);
-          }
-        } catch (err) {
-          console.warn("Failed to fetch user rank outside top 100:", err);
-        } finally {
-          setLoadingLeaderboard(false);
+        // User is not in top 100 — show their rank below the table
+        const userEntry = finalList.find((item) => item.uid === currentUser.uid);
+        if (userEntry) {
+          const rank = finalList.indexOf(userEntry) + 1;
+          setUserRank(rank);
+          setUserScore(userEntry.score);
+        } else {
+          setUserRank(null);
+          setUserScore(null);
         }
       }
+
+      setLoadingLeaderboard(false);
+    }, (err) => {
+      console.warn("ProfileSettingsModal leaderboard fetch error:", err);
+      setLoadingLeaderboard(false);
     });
 
     return () => unsubscribe();
   }, [activeTab, leaderboardTab, user, profile]);
+
 
   const handleUpdateUsername = async (e: React.FormEvent) => {
     e.preventDefault();

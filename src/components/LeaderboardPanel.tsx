@@ -19,43 +19,60 @@ export const LeaderboardPanel: React.FC = () => {
     setLoading(true);
     setScores([]);
 
-    let q;
-    if (activeTab === "daily") {
-      q = getDailyScoresQuery();
-    } else if (activeTab === "weekly") {
-      q = getWeeklyScoresQuery();
-    } else {
-      q = getAllTimeScoresQuery();
-    }
+    const q =
+      activeTab === "daily"
+        ? getDailyScoresQuery()
+        : activeTab === "weekly"
+        ? getWeeklyScoresQuery()
+        : getAllTimeScoresQuery();
 
     const unsubscribe = onSnapshot(
       q,
       (snapshot) => {
         const rawEntries: ScoreEntry[] = [];
+
         snapshot.forEach((doc) => {
           const data = doc.data();
-          rawEntries.push({
-            userId: data.userId || "",
-            username: data.username || "anonymous",
-            score: Number(data.score) || 0,
-            timestamp: data.timestamp
-          });
+
+          if (activeTab === "alltime") {
+            // All-Time: reading from `users` collection — use bestScore field
+            // Only include users who have actually played (bestScore > 0)
+            const bestScore = Number(data.bestScore) || 0;
+            if (bestScore > 0) {
+              rawEntries.push({
+                userId: doc.id,               // users/{uid} — doc.id is the uid
+                username: data.username || "anonymous",
+                score: bestScore,
+              });
+            }
+          } else {
+            // Daily / Weekly: reading from `scores` collection — each doc is one run
+            rawEntries.push({
+              userId: data.userId || "",
+              username: data.username || "anonymous",
+              score: Number(data.score) || 0,
+              timestamp: data.timestamp,
+            });
+          }
         });
 
-        // 1. If daily/weekly, we sort the raw entries by score DESC on the client
+        // For daily/weekly: sort by score DESC on client side (Firestore ordered by timestamp)
         if (activeTab === "daily" || activeTab === "weekly") {
           rawEntries.sort((a, b) => b.score - a.score);
         }
+        // All-time: already ordered by bestScore DESC from Firestore, no dedup needed
 
-        // 2. Deduplicate scores client-side to keep only each user's personal best
-        const deduped = deduplicateScores(rawEntries);
+        // Deduplicate to keep only each user's highest score in the period
+        const deduped =
+          activeTab === "alltime"
+            ? rawEntries                       // users collection already 1 doc/user
+            : deduplicateScores(rawEntries);   // scores collection: keep best per user
 
-        // 3. Keep top 100 entries for display
         setScores(deduped.slice(0, 100));
         setLoading(false);
       },
       (error) => {
-        console.error(`LeaderboardPanel fetch error for tab ${activeTab}:`, error);
+        console.error(`LeaderboardPanel fetch error [${activeTab}]:`, error);
         setLoading(false);
       }
     );
@@ -93,7 +110,7 @@ export const LeaderboardPanel: React.FC = () => {
           </div>
         ) : scores.length === 0 ? (
           <div className="leaderboard-panel-empty">
-            NO RUNS LOGGED
+            NO RUNS LOGGED YET
           </div>
         ) : (
           <div className="leaderboard-panel-scroll-area">

@@ -50,11 +50,14 @@ service cloud.firestore {
     // 4. Global Scores Collection (New Unified Leaderboard Source)
     match /scores/{scoreId} {
       allow read: if request.auth != null;
+      // Note: serverTimestamp() sentinel is NOT evaluated as "is timestamp" at rule-check time,
+      // so we must not validate the timestamp field type here.
       allow create: if request.auth != null
         && request.resource.data.userId == request.auth.uid
         && request.resource.data.username is string
         && request.resource.data.score is int
-        && request.resource.data.timestamp is timestamp;
+        && request.resource.data.score >= 0
+        && request.resource.data.score < 500000;
     }
 
     // Helper: Validates user profile data schema and constraints
